@@ -21,6 +21,7 @@ import org.danekja.discussment.core.configuration.service.ConfigurationService;
 import org.danekja.discussment.core.domain.Post;
 import org.danekja.discussment.core.service.PostReputationService;
 import org.danekja.discussment.core.service.PostService;
+import org.danekja.discussment.ui.wicket.model.PostWicketModel;
 import org.danekja.discussment.ui.wicket.panel.postReputation.PostReputationPanel;
 
 import java.util.List;
@@ -35,7 +36,8 @@ public class PostListPanel extends Panel {
 
     private IModel<Post> postModel;
     private PostService postService;
-    private IModel<List<Post>> postListModel;
+    private IModel<Post> rootPostModel;
+    private PostWicketModel postListModel;
 
     private DiscussionUserService userService;
     private PostReputationService postReputationService;
@@ -45,7 +47,7 @@ public class PostListPanel extends Panel {
      * Constructor for creating a instance of the panel contains the posts
      *
      * @param id id of the element into which the panel is inserted
-     * @param postListModel model for getting the posts
+     * @param rootPostModel model for getting the posts
      * @param postModel model for setting the selected post
      * @param postService instance of the post service
      * @param userService instance of the user service
@@ -53,7 +55,7 @@ public class PostListPanel extends Panel {
      * @param configurationService instance of the configuration service
      */
     public PostListPanel(String id,
-                         IModel<List<Post>> postListModel,
+                         IModel<Post> rootPostModel,
                          IModel<Post> postModel,
                          PostService postService,
                          DiscussionUserService userService,
@@ -63,7 +65,8 @@ public class PostListPanel extends Panel {
 
         this.postModel = postModel;
         this.postService = postService;
-        this.postListModel = postListModel;
+        this.rootPostModel = rootPostModel;
+        this.postListModel = new PostWicketModel(rootPostModel);
 
         this.userService = userService;
         this.postReputationService = postReputationService;
@@ -71,11 +74,14 @@ public class PostListPanel extends Panel {
     }
 
 
+
+
     @Override
     protected void onInitialize() {
         super.onInitialize();
 
         Map<Long, IDiscussionUser> postsAuthors = postService.getPostsAuthors(postListModel.getObject());
+        postListModel.detach();
 
         add(new ListView<Post>("postListView", postListModel) {
             protected void populateItem(final ListItem<Post> listItem) {

@@ -28,6 +28,11 @@ public class PostWicketModel extends LoadableDetachableModel<List<Post>> {
     }
 
     @Override
+    protected void onAttach() {
+        detach();
+    }
+
+    @Override
     protected List<Post> load() {
 
         return createListDfs(post.getObject());
