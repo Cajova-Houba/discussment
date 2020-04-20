@@ -4,15 +4,15 @@ import org.apache.wicket.markup.html.list.ListItem;
 import org.apache.wicket.markup.html.list.ListView;
 import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.model.IModel;
+import org.danekja.discussment.core.accesscontrol.domain.IDiscussionUser;
 import org.danekja.discussment.core.accesscontrol.service.DiscussionUserService;
 import org.danekja.discussment.core.configuration.service.ConfigurationService;
 import org.danekja.discussment.core.domain.Post;
 import org.danekja.discussment.core.service.PostReputationService;
 import org.danekja.discussment.core.service.PostService;
-import org.danekja.discussment.ui.wicket.list.post.PostListPanel;
-import org.danekja.discussment.ui.wicket.model.PostWicketModel;
+import org.danekja.discussment.ui.wicket.panel.panel.PostPanel;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Martin Bláha on 04.02.17.
@@ -60,11 +60,40 @@ public class ThreadListPanel extends Panel {
     protected void onInitialize() {
         super.onInitialize();
 
+        Map<Long, IDiscussionUser> postsAuthors = postService.getPostsAuthors(getAllPostsDfs());
+
         add(new ListView<Post>("threadListView", threadListModel) {
             protected void populateItem(ListItem<Post> listItem) {
-                listItem.add(new PostListPanel("postPanel", listItem.getModel(), postModel, postService, userService,  postReputationService, configurationService));
+                listItem.add(new PostPanel("postPanel", listItem.getModel(), postService, userService, configurationService, postReputationService,  postsAuthors));
             }
         });
+    }
+
+    /**
+     * Uses DFS to traverse reply tree of each root post and transform it into the list.
+     *
+     * @return All posts in threadListModel, including replies, as a list.
+     */
+    private List<Post> getAllPostsDfs() {
+        List<Post> posts = new ArrayList<>();
+        Stack<Post> replyStack = new Stack<>();
+        for(Post post : threadListModel.getObject()) {
+            replyStack.push(post);
+
+            while(!replyStack.isEmpty()) {
+                Post p = replyStack.pop();
+                posts.add(p);
+
+                // push replies to the stack in reverse order
+                // so that they're popped in correct order
+                ListIterator<Post> replyIterator = p.getReplies().listIterator(p.getReplies().size());
+                while(replyIterator.hasPrevious()) {
+                    replyStack.push(replyIterator.previous());
+                }
+            }
+        }
+
+        return posts;
     }
 
     @Override
